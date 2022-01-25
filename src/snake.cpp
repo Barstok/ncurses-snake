@@ -11,16 +11,36 @@ void CSnake::printHelp(){
         gotoyx(y + 4, x + 2);
         printl("Eat as much food as you can.");
         gotoyx(y + 5, x + 2);
-        printl("Also, dont die.");
-        gotoyx(y + 7, x + 2);
         printl("press 'p' or 'r' to play or 'h' for help");
 }
 
 void CSnake::paint(){
 	CFramedWindow::paint();
-	printHelp();
+	
+	if(!died){
+		gotoyx(geom.topleft.y-1,geom.topleft.x);
+		printl("| LEVEL: %d |",level);
+		if(pause&&help) printHelp();
+		if(!pause) printSnake();
+	}
+	else{
+		gotoyx((geom.topleft.y+geom.size.y)/2,geom.topleft.x+15);
+		printl("GAME OVER");
+		gotoyx((geom.topleft.y+geom.size.y)/2+1,geom.topleft.x+13);
+		printl("Your score: %d",level);
+		gotoyx((geom.topleft.y+geom.size.y)/2+2,geom.topleft.x+7);
+		printl("Press r to restart the game");
+	}
 }
 
-bool handleEvent(int key){
+void CSnake::printSnake(){
 	
+}
+
+bool CSnake::handleEvent(int key){
+	if(pause&&tolower(key)=='h'){
+		help=!help;
+		return true;
+	}
+	return CFramedWindow::handleEvent(key);
 }
