@@ -5,6 +5,7 @@ CSnake::CSnake(CRect r, char _c /*=' '*/):
 {
 	srand(time(NULL));
 	gameReset();
+	generateFood();
 }
 void CSnake::printHelp(){
 	int x = geom.topleft.x, y = geom.topleft.y;
@@ -20,10 +21,15 @@ void CSnake::paint(){
 	CFramedWindow::paint();
 	
 	if(!died){
+		gotoyx(geom.topleft.y-2,geom.topleft.x);
+		printl("| HIGHSCORE: %d |",highscore);
 		gotoyx(geom.topleft.y-1,geom.topleft.x);
 		printl("| LEVEL: %d |",level);
 		if(pause&&help) printHelp();
-		if(!pause) printSnake();
+		if(!pause){
+			printFood();
+			printSnake();
+		}
 	}
 	else{
 		gotoyx((geom.topleft.y+geom.size.y)/2,geom.topleft.x+15);
@@ -45,13 +51,44 @@ void CSnake::gameReset(){
     segments.push_back(CPoint(headPosX - 2, headPosY));
 }
 
+void CSnake::generateFood(){
+	while(1){
+		food.x=(rand() % (geom.size.x - 2)) + 1;
+		food.y=(rand() % (geom.size.y - 2)) + 1;
+		for (unsigned long i = segments.size()-1; i > 0; i--) {
+            if(food.y!=segments[i].y||food.x!=segments[i].x) return;
+        }
+	}
+}
+
+int CSnake::collisionCheck(){
+	for (unsigned long i = segments.size()-1; i > 0; i--) {
+            if(segments[0].y==segments[i].y&&segments[0].x==segments[i].x) return 1;
+        }
+     if(segments[0].y==food.y&&segments[0].x==food.x) return 2;
+     
+     return 0;
+}
+
 bool CSnake::moveSnake() {
         if (pause) {
             return true;
         }
-        for (unsigned long i = segments.size() - 1; i > 0; i--) {
-            segments[i] = segments[i - 1];
-        }
+        int check = collisionCheck();
+        if(check==1){
+			died=!died;
+			if(level>highscore) highscore=level;
+			return false;
+		}
+        if(check==2){
+			generateFood();
+			level++;
+			CPoint tail = segments[segments.size()-1];
+			segments.push_back(tail);
+		}
+		for (unsigned long i = segments.size() - 1; i > 0; i--) {
+				segments[i] = segments[i - 1];
+		}
         if (dir == KEY_DOWN) {
             segments[0] += CPoint(0, 1);
         } else if (dir == KEY_UP) {
@@ -60,11 +97,6 @@ bool CSnake::moveSnake() {
             segments[0] += CPoint(1, 0);
         } else if (dir == KEY_LEFT) {
             segments[0] += CPoint(-1, 0);
-        }
-        for (unsigned int i = 1; i < segments.size(); i++) {
-            if (segments[0].x == segments[i].x && segments[0].y == segments[i].y) {
-                return false;
-            }
         }
         if (segments[0].x == 0) {
             segments[0].x = geom.size.x - 2;
@@ -78,10 +110,12 @@ bool CSnake::moveSnake() {
         if (segments[0].y == geom.size.y - 1) {
             segments[0].y = 1;
         }
-        //if (ate()) {
-        //    parts.push_back(tail);
-        //}
         return true;
+}
+
+void CSnake::printFood(){
+	gotoyx(food.y + geom.topleft.y, food.x + geom.topleft.x);
+	printc('0');
 }
 
 void CSnake::printSnake(){
@@ -96,6 +130,7 @@ void CSnake::printSnake(){
 
 bool CSnake::handleEvent(int key){
 	if(key==ERR){
+		if(level>20) return true;
 		speed+=level;
 		if(speed>=20){
 			speed=0;
@@ -103,12 +138,22 @@ bool CSnake::handleEvent(int key){
 		}
 		return false;
 	}
+	if(!died&&tolower(key)=='r'){
+		if(pause) pause=false;
+		gameReset();
+		return true;
+	}
 	if(pause&&tolower(key)=='h'){
 		help=!help;
 		return true;
 	}
 	if(!died&&tolower(key)=='p'){
 		pause=!pause;
+		return true;
+	}
+	if(died&&tolower(key)=='r'){
+		died=false;
+		gameReset();
 		return true;
 	}
 	if (!died && !pause && (key == KEY_UP || key == KEY_DOWN || key == KEY_LEFT || key == KEY_RIGHT)) {

@@ -13,11 +13,14 @@ class CSnake:public CFramedWindow
 private:
 	vector<CPoint> segments;
 	int level;
+	int highscore=0;
 	bool pause=true;
 	bool help=true;
 	bool died=false;
 	int dir = KEY_RIGHT;
 	int speed=1;
+	CPoint food;
+	
 public:
   CSnake(CRect r, char _c = ' ');
 	void printHelp();
@@ -26,6 +29,9 @@ public:
 	void printSnake();
 	void gameReset();
 	bool moveSnake();
+	int collisionCheck();
+	void generateFood();
+	void printFood();
 };
 
 #endif
